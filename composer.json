@@ -1,5 +1,5 @@
 {
-    "name": "elliottlawson/laravel-mcp-server",
+    "name": "elliottlawson/mcp-laravel-sdk",
     "description": "Laravel wrapper for the MCP PHP SDK",
     "type": "library",
     "license": "MIT",
