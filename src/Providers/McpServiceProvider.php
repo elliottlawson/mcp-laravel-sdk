@@ -20,7 +20,7 @@ class McpServiceProvider extends ServiceProvider
 
         // Register the McpManager as a singleton
         $this->app->singleton(McpManager::class, function ($app) {
-            return new McpManager($app['config']->get('mcp'));
+            return new McpManager($app);
         });
 
         // Register the McpServer as a singleton
