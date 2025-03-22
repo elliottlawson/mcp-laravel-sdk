@@ -11,7 +11,7 @@ return [
     */
 
     // Server information
-    'name' => env('MCP_SERVER_NAME', 'Laravel MCP Server'),
+    'name' => env('MCP_SERVER_NAME', 'Laravel MCP SDK'),
 
     // Server capabilities
     'capabilities' => [
