@@ -2,15 +2,11 @@
 
 namespace ElliottLawson\LaravelMcp\Support;
 
-class Version
-{
-    const VERSION = '1.0.0';
-
-    /**
-     * Get the version of the package.
-     */
-    public static function get(): string
-    {
-        return self::VERSION;
-    }
-}
+/**
+ * Version information for this package is now managed through Git tags.
+ * 
+ * The version number is defined in the package's composer.json file
+ * and is synchronized with the package's Git repository tags.
+ * 
+ * @deprecated This class has been removed in favor of Git-based versioning.
+ */

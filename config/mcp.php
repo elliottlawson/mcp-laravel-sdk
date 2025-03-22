@@ -12,7 +12,6 @@ return [
 
     // Server information
     'name' => env('MCP_SERVER_NAME', 'Laravel MCP Server'),
-    'version' => env('MCP_SERVER_VERSION', '1.0.0'),
 
     // Server capabilities
     'capabilities' => [
