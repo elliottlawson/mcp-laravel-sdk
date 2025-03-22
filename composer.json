@@ -1,0 +1,58 @@
+{
+    "name": "elliottlawson/laravel-mcp-server",
+    "description": "Laravel wrapper for the MCP PHP SDK",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Elliott Lawson"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "laravel/framework": "^9.0|^10.0|^11.0|^12.0",
+        "symfony/http-foundation": "^6.0|^7.0",
+        "laravel/helpers": "^1.6",
+        "elliottlawson/mcp-php-sdk": "^0.1.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.0|^10.0",
+        "orchestra/testbench": "^7.0|^8.0|^9.0|^10.0",
+        "laravel/pint": "^1.13"
+    },
+    "autoload": {
+        "psr-4": {
+            "ElliottLawson\\LaravelMcp\\": "src/"
+        },
+        "files": [
+            "src/helpers.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "ElliottLawson\\LaravelMcp\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "ElliottLawson\\LaravelMcp\\Providers\\McpServiceProvider"
+            ],
+            "aliases": {
+                "Mcp": "ElliottLawson\\LaravelMcp\\Facades\\Mcp"
+            }
+        }
+    },
+    "scripts": {
+        "post-install-cmd": [
+            "@php -r \"if(file_exists('.git/hooks/pre-commit') === false) { copy('.hooks/pre-commit', '.git/hooks/pre-commit'); copy('.hooks/pre-push', '.git/hooks/pre-push'); }\""
+        ],
+        "post-update-cmd": [
+            "@php -r \"if(file_exists('.git/hooks/pre-commit') === false) { copy('.hooks/pre-commit', '.git/hooks/pre-commit'); copy('.hooks/pre-push', '.git/hooks/pre-push'); }\""
+        ],
+        "test": "vendor/bin/phpunit",
+        "lint": "vendor/bin/pint"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
