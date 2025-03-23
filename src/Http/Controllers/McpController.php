@@ -7,6 +7,8 @@ use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use ElliottLawson\LaravelMcp\McpManager;
 use ElliottLawson\McpPhpSdk\Server\McpServer;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -133,23 +135,122 @@ class McpController extends Controller
 
     /**
      * Handle SSE connections.
+     * 
+     * This implements the server-to-client streaming part of the MCP transport.
      */
     public function sse(Request $request, McpManager $mcpManager): StreamedResponse
     {
-        // Create a new SSE transport with the heartbeat interval from config
+        // Generate a unique connection ID for this SSE connection
+        $connectionId = Str::uuid()->toString();
+        
+        // Create the appropriate cache key for this connection
+        $cacheKey = "mcp.sse.connection.{$connectionId}";
+        
+        // Configure heartbeat interval from config
         $heartbeatInterval = config('mcp.sse.heartbeat_interval', 30);
+        
+        // Create and configure the transport
         $transport = new LaravelSseTransport($heartbeatInterval);
-
+        
+        // Set the message store ID (connection ID) to enable message routing
+        $transport->setMessageStoreId($connectionId);
+        
+        // Set up message handler to process incoming messages
+        $transport->setMessageHandler(function (string $message) use ($connectionId) {
+            // Process incoming message
+            Log::debug("Processing SSE message for connection {$connectionId}", [
+                'message_length' => strlen($message)
+            ]);
+            
+            // Dispatch event for incoming message
+            Event::dispatch('mcp.message.processed', [
+                'connection_id' => $connectionId,
+                'message' => $message,
+            ]);
+        });
+        
         // Connect the server to our transport
         $mcpManager->server()->connect($transport);
-
+        
+        // Store the connection ID in the session for future message endpoints
+        $request->session()->put('mcp_connection_id', $connectionId);
+        
+        // Store the transport instance in cache for message processing
+        Cache::put("mcp.sse.transport.{$connectionId}", $transport, now()->addHours(1));
+        
         // Dispatch event for new SSE connection
-        Event::dispatch('mcp.sse.connected', [$request, $transport]);
-
-        // Start the transport
-        $transport->start();
+        Event::dispatch('mcp.sse.connected', [
+            'connection_id' => $connectionId,
+            'request' => $request,
+            'transport' => $transport
+        ]);
+        
+        // Store connection details in cache (needed for message endpoint)
+        Cache::put($cacheKey, [
+            'created_at' => now(),
+            'last_active' => now(),
+            'user_id' => $request->user()?->id,
+            'ip' => $request->ip(),
+        ], now()->addHours(1));
 
         // Return the SSE response
         return $transport->getResponse();
+    }
+    
+    /**
+     * Handle client-to-server messages for an established SSE connection.
+     * 
+     * This endpoint receives messages from the client and routes them to the 
+     * appropriate SSE connection via the cache.
+     */
+    public function message(Request $request): Response
+    {
+        // Get the connection ID either from the request or session
+        $connectionId = $request->input('connection_id', $request->session()->get('mcp_connection_id'));
+        
+        if (!$connectionId) {
+            return ResponseFacade::make(json_encode([
+                'error' => 'No active connection found',
+            ]))->header('Content-Type', 'application/json')->setStatusCode(400);
+        }
+        
+        // Get connection details from cache
+        $cacheKey = "mcp.sse.connection.{$connectionId}";
+        if (!Cache::has($cacheKey)) {
+            return ResponseFacade::make(json_encode([
+                'error' => 'Connection expired or not found',
+            ]))->header('Content-Type', 'application/json')->setStatusCode(404);
+        }
+        
+        // Update last_active timestamp
+        $connectionData = Cache::get($cacheKey);
+        $connectionData['last_active'] = now();
+        Cache::put($cacheKey, $connectionData, now()->addHours(1));
+        
+        // Get the message content
+        $message = $request->getContent();
+        
+        // Try to get transport from cache to process the message directly
+        $transport = Cache::get("mcp.sse.transport.{$connectionId}");
+        if ($transport instanceof LaravelSseTransport) {
+            // Process message using transport's processMessage method
+            $transport->processMessage($message);
+        } else {
+            // Fall back to the cache-based approach if transport is not available
+            $messageKey = "mcp.sse.message.{$connectionId}." . Str::uuid()->toString();
+            Cache::put($messageKey, $message, now()->addMinutes(10));
+        }
+        
+        // Dispatch event
+        Event::dispatch('mcp.message.received', [
+            'connection_id' => $connectionId,
+            'message' => $message,
+        ]);
+        
+        // Return success response
+        return ResponseFacade::make(json_encode([
+            'success' => true,
+            'connection_id' => $connectionId,
+        ]))->header('Content-Type', 'application/json')->setStatusCode(200);
     }
 }

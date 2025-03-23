@@ -4,7 +4,7 @@ namespace ElliottLawson\LaravelMcp\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Illuminate\Support\Facades\Event;
 use ElliottLawson\LaravelMcp\Facades\Mcp;
 
@@ -37,7 +37,7 @@ class McpMiddleware
      *
      * @return void
      */
-    public function terminate(Request $request, Response $response)
+    public function terminate(Request $request, SymfonyResponse $response)
     {
         // If this was an MCP request, we can do any cleanup here
         if ($request->route() && in_array($request->route()->getName(), ['mcp.handle', 'mcp.sse'])) {
