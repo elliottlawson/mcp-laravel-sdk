@@ -6,6 +6,8 @@ use Tests\TestCase;
 use ReflectionClass;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use Illuminate\Database\Eloquent\Model;
 use ElliottLawson\LaravelMcp\McpManager;
 use ElliottLawson\LaravelMcp\Tools\CommandTool;
@@ -244,11 +246,20 @@ class McpServerTest extends TestCase
     }
 
     /**
-     * Test that the SSE endpoint works correctly.
+     * Test SSE connection.
+     * 
+     * Note: This test may be marked as "risky" by PHPUnit due to the nature of SSE testing,
+     * which requires output buffer manipulation. This is expected behavior and doesn't
+     * indicate a problem with the test or the code being tested.
      */
     #[Test]
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     public function test_sse_connection(): void
     {
+        // Expect some output from the SSE connection
+        $this->expectOutputRegex('/data:/');
+        
         // This test requires a real browser to test SSE connections
         // So we'll just test that the endpoint exists and returns a 200 response
         $clientId = Str::uuid()->toString();

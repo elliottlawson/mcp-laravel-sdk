@@ -6,6 +6,8 @@ use Tests\TestCase;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Event;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use ElliottLawson\LaravelMcp\Support\LaravelSseTransport;
 
 class SseTest extends TestCase
@@ -86,10 +88,19 @@ class SseTest extends TestCase
 
     /**
      * Test that the SSE connection can establish a connection and maintain it.
+     * 
+     * Note: This test may be marked as "risky" by PHPUnit due to the nature of SSE testing,
+     * which requires output buffer manipulation. This is expected behavior and doesn't
+     * indicate a problem with the test or the code being tested.
      */
     #[Test]
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     public function test_sse_connection_establishment(): void
     {
+        // Expect some output from the SSE connection
+        $this->expectOutputRegex('/data:/');
+        
         // This test simulates a connection to the SSE endpoint
         // We'll use a custom response macro to capture the streamed response
 
@@ -111,10 +122,19 @@ class SseTest extends TestCase
 
     /**
      * Test that events are properly broadcasted through the SSE connection.
+     * 
+     * Note: This test may be marked as "risky" by PHPUnit due to the nature of SSE testing,
+     * which requires output buffer manipulation. This is expected behavior and doesn't
+     * indicate a problem with the test or the code being tested.
      */
     #[Test]
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
     public function test_event_broadcasting(): void
     {
+        // Expect some output from the SSE connection
+        $this->expectOutputRegex('/data:/');
+        
         // Mock the event dispatcher
         Event::fake();
 
