@@ -5,8 +5,8 @@ namespace ElliottLawson\LaravelMcp\Providers;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use ElliottLawson\LaravelMcp\McpManager;
-use ElliottLawson\McpPhpSdk\Server\McpServer;
 use ElliottLawson\LaravelMcp\Support\EventListener;
+use Sajya\Server\ServerRequestHelper;
 
 class McpServiceProvider extends ServiceProvider
 {
@@ -23,13 +23,8 @@ class McpServiceProvider extends ServiceProvider
             return new McpManager($app);
         });
 
-        // Register the McpServer as a singleton
-        $this->app->singleton(McpServer::class, function ($app) {
-            return $app->make(McpManager::class)->server();
-        });
-
         // Register the facades
-        $this->app->alias(McpManager::class, 'mcp.manager');
+        $this->app->alias(McpManager::class, 'mcp');
     }
 
     /**
@@ -39,7 +34,7 @@ class McpServiceProvider extends ServiceProvider
     {
         // Publish the configuration file
         $this->publishes([
-            __DIR__ . '/../../config/mcp.php' => config_path('mcp.php'),
+            __DIR__ . '/../../config/mcp.php' => $this->app->configPath('mcp.php'),
         ], 'mcp-config');
 
         // Load routes with conditional middleware based on config
@@ -53,13 +48,7 @@ class McpServiceProvider extends ServiceProvider
         }
 
         // Register event listeners
-        if ($this->app->resolved(McpServer::class)) {
-            $this->registerEventListeners();
-        } else {
-            $this->app->afterResolving(McpServer::class, function () {
-                $this->registerEventListeners();
-            });
-        }
+        $this->registerEventListeners();
     }
 
     /**
@@ -69,8 +58,8 @@ class McpServiceProvider extends ServiceProvider
     {
         // Get route configuration
         $routeConfig = $this->app->make('config')->get('mcp.http', []);
-        $prefix = $routeConfig['route_prefix'] ?? 'mcp';
-        $middleware = $routeConfig['middleware'] ?? ['web'];
+        $prefix = $routeConfig['prefix'] ?? 'mcp';
+        $middleware = $routeConfig['middleware'] ?? ['api'];
 
         Route::middleware($middleware)
             ->prefix($prefix)
@@ -83,8 +72,8 @@ class McpServiceProvider extends ServiceProvider
     protected function registerEventListeners(): void
     {
         $events = $this->app->make('events');
-        $server = $this->app->make(McpServer::class);
+        $manager = $this->app->make(McpManager::class);
 
-        EventListener::register($events, $server);
+        EventListener::register($events, $manager);
     }
 }
