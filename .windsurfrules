@@ -1,0 +1,2 @@
+1. You're working in a Laravel 12 project. Follow Laravel 12 conventions and best practices.
+2. Laravel 12 moved the config and provider registrations to the bootstrap directory. Do not create one from scratch inside config. 
