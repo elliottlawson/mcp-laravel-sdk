@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use ElliottLawson\LaravelMcp\McpManager;
 use Symfony\Component\HttpFoundation\StreamedResponse;
-use ElliottLawson\LaravelMcp\Support\LaravelSseTransport;
+use ElliottLawson\LaravelMcp\Support\LaravelNativeSseTransport;
 
 /**
  * Controller for handling MCP requests and SSE connections.
@@ -436,38 +436,34 @@ class McpController extends Controller
             'request' => $request,
         ]);
 
-        // Create a streamed response
-        return new StreamedResponse(function () use ($connectionId, $heartbeatInterval, $maxExecutionTime) {
-            // Create and configure the transport
-            $transport = new LaravelSseTransport($heartbeatInterval, $maxExecutionTime);
+        // Create a new transport with the connection ID
+        $transport = new LaravelNativeSseTransport(
+            $heartbeatInterval,
+            $maxExecutionTime,
+            $connectionId
+        );
 
-            // Listen for events and send them to the client
-            $transport->listen(function ($transport) use ($connectionId) {
-                // Dispatch connection ready event
-                Event::dispatch('mcp.sse.ready', [
-                    'connection_id' => $connectionId,
-                    'transport' => $transport,
-                ]);
+        // Create and return the streamed response
+        return $transport->createResponse(function ($transport) use ($connectionId) {
+            // Dispatch connection ready event
+            Event::dispatch('mcp.sse.ready', [
+                'connection_id' => $connectionId,
+                'transport' => $transport,
+            ]);
 
-                // Set up event listener for sending messages through this transport
-                Event::listen('mcp.sse.send', function ($event) use ($transport, $connectionId) {
-                    // Only process events for this connection
-                    if (isset($event['connection_id']) && $event['connection_id'] === $connectionId) {
-                        $data = $event['data'] ?? null;
-                        $eventName = $event['event'] ?? null;
-                        $id = $event['id'] ?? null;
+            // Set up event listener for sending messages through this transport
+            Event::listen('mcp.sse.send', function ($event) use ($transport, $connectionId) {
+                // Only process events for this connection
+                if (isset($event['connection_id']) && $event['connection_id'] === $connectionId) {
+                    $data = $event['data'] ?? null;
+                    $eventName = $event['event'] ?? null;
+                    $id = $event['id'] ?? null;
 
-                        if ($data) {
-                            $transport->send($data, $eventName, $id);
-                        }
+                    if ($data) {
+                        $transport->send($data, $eventName, $id);
                     }
-                });
+                }
             });
-        }, 200, [
-            'Content-Type' => 'text/event-stream',
-            'Cache-Control' => 'no-cache',
-            'Connection' => 'keep-alive',
-            'X-Accel-Buffering' => 'no',
-        ]);
+        });
     }
 }

@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use ElliottLawson\LaravelMcp\McpManager;
 use ElliottLawson\LaravelMcp\Support\EventListener;
+use ElliottLawson\LaravelMcp\Providers\SseServiceProvider;
 
 class McpServiceProvider extends ServiceProvider
 {
@@ -24,6 +25,9 @@ class McpServiceProvider extends ServiceProvider
 
         // Register the facades
         $this->app->alias(McpManager::class, 'mcp');
+        
+        // Register the SSE service provider
+        $this->app->register(SseServiceProvider::class);
     }
 
     /**
