@@ -13,7 +13,8 @@
         "laravel/framework": "^10.48.29|^11.0|^12.0",
         "symfony/http-foundation": "^6.0|^7.0",
         "laravel/helpers": "^1.6",
-        "sajya/server": "^7.0"
+        "sajya/server": "^7.0",
+        "guzzlehttp/guzzle": "^7.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^9.0|^10.0|^11.0",
