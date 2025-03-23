@@ -4,11 +4,8 @@ namespace Tests\Unit\Transport;
 
 use Orchestra\Testbench\TestCase;
 use Illuminate\Support\Facades\Event;
-use ElliottLawson\McpPhpSdk\Transport\SseTransport;
-use Symfony\Component\HttpFoundation\StreamedResponse;
-use ElliottLawson\McpPhpSdk\Contracts\TransportInterface;
 use ElliottLawson\LaravelMcp\Providers\McpServiceProvider;
-use ElliottLawson\LaravelMcp\Transport\LaravelSseTransport;
+use ElliottLawson\LaravelMcp\Support\LaravelSseTransport;
 
 class LaravelSseTransportTest extends TestCase
 {
@@ -36,104 +33,74 @@ class LaravelSseTransportTest extends TestCase
         Event::fake();
 
         // Create a new transport instance with custom heartbeat interval
-        $this->transport = new LaravelSseTransport(10, '/test/message/path');
+        $this->transport = new LaravelSseTransport(10, 120);
     }
 
     /** @test */
-    public function it_extends_sse_transport()
+    public function it_implements_sse_functionality()
     {
-        $this->assertInstanceOf(SseTransport::class, $this->transport);
-        $this->assertInstanceOf(TransportInterface::class, $this->transport);
+        $this->assertInstanceOf(LaravelSseTransport::class, $this->transport);
     }
 
     /** @test */
-    public function it_returns_streamed_response()
+    public function it_has_connection_id()
     {
-        $response = $this->transport->getResponse();
-
-        $this->assertInstanceOf(StreamedResponse::class, $response);
-        $this->assertEquals('text/event-stream', $response->headers->get('Content-Type'));
-        $this->assertEquals('no-cache, private', $response->headers->get('Cache-Control'));
-        $this->assertEquals('keep-alive', $response->headers->get('Connection'));
+        $this->assertNotEmpty($this->transport->getConnectionId());
+        $this->assertIsString($this->transport->getConnectionId());
     }
 
     /** @test */
-    public function it_can_set_message_handler()
+    public function it_can_send_data_as_string()
     {
-        $called = false;
-        $handler = function ($message) use (&$called) {
-            $called = true;
-
-            return 'processed: ' . $message;
-        };
-
-        $result = $this->transport->setMessageHandler($handler);
-
-        // Should return $this for method chaining
-        $this->assertInstanceOf(LaravelSseTransport::class, $result);
-
-        // Test the handler by directly calling processMessage
-        $testMessage = '{"test":"message"}';
-        $this->transport->processMessage($testMessage);
-
-        // Verify that our handler was called
-        $this->assertTrue($called, 'Message handler should have been called');
+        // Set up output buffering to capture the output
+        ob_start();
+        
+        $this->transport->send('test-message');
+        
+        $output = ob_get_clean();
+        
+        $this->assertStringContainsString('data: test-message', $output);
     }
 
     /** @test */
-    public function it_can_set_message_store_id()
+    public function it_can_send_data_as_array()
     {
-        $id = 'test-connection-id';
-
-        $result = $this->transport->setMessageStoreId($id);
-
-        // Should return $this for method chaining
-        $this->assertInstanceOf(LaravelSseTransport::class, $result);
-
-        // For now, we're limited in what we can verify in this test
-        // since messageStoreId is protected in the parent class
-        $this->assertTrue(true, 'Should set message store ID without errors');
+        // Set up output buffering to capture the output
+        ob_start();
+        
+        $data = ['message' => 'test', 'type' => 'notification'];
+        $this->transport->send($data);
+        
+        $output = ob_get_clean();
+        
+        $this->assertStringContainsString('data: {"message":"test","type":"notification"}', $output);
     }
 
     /** @test */
-    public function it_starts_and_stops_transport()
+    public function it_can_send_data_with_event_name()
     {
-        $this->assertFalse($this->transport->isRunning());
-
-        $this->transport->start();
-        $this->assertTrue($this->transport->isRunning());
-
-        $this->transport->stop();
-        $this->assertFalse($this->transport->isRunning());
+        // Set up output buffering to capture the output
+        ob_start();
+        
+        $this->transport->send('test-message', 'custom-event');
+        
+        $output = ob_get_clean();
+        
+        $this->assertStringContainsString('event: custom-event', $output);
+        $this->assertStringContainsString('data: test-message', $output);
     }
 
     /** @test */
-    public function it_can_process_messages()
+    public function it_can_send_data_with_id()
     {
-        $processedMessage = null;
-        $handler = function ($message) use (&$processedMessage) {
-            $processedMessage = $message;
-
-            return 'processed';
-        };
-
-        $this->transport->setMessageHandler($handler);
-
-        $testMessage = json_encode(['test' => 'value']);
-        $this->transport->processMessage($testMessage);
-
-        $this->assertEquals($testMessage, $processedMessage);
-    }
-
-    /** @test */
-    public function get_response_includes_proper_content_type_and_headers()
-    {
-        $response = $this->transport->getResponse();
-
-        $this->assertInstanceOf(StreamedResponse::class, $response);
-        $this->assertEquals(200, $response->getStatusCode());
-        $this->assertEquals('text/event-stream', $response->headers->get('Content-Type'));
-        $this->assertEquals('no-cache, private', $response->headers->get('Cache-Control'));
-        $this->assertEquals('keep-alive', $response->headers->get('Connection'));
+        // Set up output buffering to capture the output
+        ob_start();
+        
+        $this->transport->send('test-message', null, '123');
+        
+        $output = ob_get_clean();
+        
+        $this->assertStringContainsString('id: 123', $output);
+        $this->assertStringContainsString('data: test-message', $output);
     }
 }
