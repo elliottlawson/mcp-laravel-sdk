@@ -27,8 +27,8 @@ abstract class BaseResource implements ResourceContract
     /**
      * Create a new resource instance.
      *
-     * @param string $name The resource name
-     * @param array $metadata Additional metadata for the resource
+     * @param  string  $name  The resource name
+     * @param  array  $metadata  Additional metadata for the resource
      */
     public function __construct(string $name, array $metadata = [])
     {
@@ -42,7 +42,7 @@ abstract class BaseResource implements ResourceContract
     /**
      * Get the resource data.
      *
-     * @param array $params The parameters for the resource request
+     * @param  array  $params  The parameters for the resource request
      * @return mixed The resource data
      */
     abstract public function getData(array $params = []);
@@ -70,7 +70,7 @@ abstract class BaseResource implements ResourceContract
     /**
      * Set the resource schema.
      *
-     * @param array|null $schema The JSON schema for the resource
+     * @param  array|null  $schema  The JSON schema for the resource
      * @return $this
      */
     public function setSchema(?array $schema): self
@@ -83,7 +83,7 @@ abstract class BaseResource implements ResourceContract
     /**
      * Set the resource metadata.
      *
-     * @param array $metadata The metadata for the resource
+     * @param  array  $metadata  The metadata for the resource
      * @return $this
      */
     public function setMetadata(array $metadata): self
@@ -96,8 +96,8 @@ abstract class BaseResource implements ResourceContract
     /**
      * Set a specific metadata value.
      *
-     * @param string $key The metadata key
-     * @param mixed $value The metadata value
+     * @param  string  $key  The metadata key
+     * @param  mixed  $value  The metadata value
      * @return $this
      */
     public function setMetadataValue(string $key, $value): self

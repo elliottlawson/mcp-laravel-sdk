@@ -5,7 +5,6 @@ namespace ElliottLawson\LaravelMcp\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Middleware for validating JSON-RPC requests.
@@ -15,8 +14,6 @@ class McpJsonRpcMiddleware
     /**
      * Handle an incoming request.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
      * @return mixed
      */
     public function handle(Request $request, Closure $next)
@@ -38,7 +35,7 @@ class McpJsonRpcMiddleware
 
             // Get request content
             $content = $request->getContent();
-            
+
             // Check if content is valid JSON
             $json = json_decode($content, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
@@ -51,7 +48,7 @@ class McpJsonRpcMiddleware
                     'id' => null,
                 ]), 400, ['Content-Type' => 'application/json']);
             }
-            
+
             // Validate JSON-RPC 2.0 structure
             if (!$this->validateJsonRpc($json)) {
                 return new Response(json_encode([
@@ -64,15 +61,14 @@ class McpJsonRpcMiddleware
                 ]), 400, ['Content-Type' => 'application/json']);
             }
         }
-        
+
         return $next($request);
     }
-    
+
     /**
      * Validate JSON-RPC 2.0 request structure.
      *
      * @param  array|null  $json
-     * @return bool
      */
     protected function validateJsonRpc($json): bool
     {
@@ -81,25 +77,24 @@ class McpJsonRpcMiddleware
             if (empty($json)) {
                 return false;
             }
-            
+
             foreach ($json as $request) {
                 if (!$this->validateSingleJsonRpc($request)) {
                     return false;
                 }
             }
-            
+
             return true;
         }
-        
+
         // Single request
         return $this->validateSingleJsonRpc($json);
     }
-    
+
     /**
      * Validate a single JSON-RPC 2.0 request.
      *
      * @param  array|null  $json
-     * @return bool
      */
     protected function validateSingleJsonRpc($json): bool
     {
@@ -107,27 +102,27 @@ class McpJsonRpcMiddleware
         if (!is_array($json) || empty($json)) {
             return false;
         }
-        
+
         // Must have jsonrpc property with value "2.0"
         if (!isset($json['jsonrpc']) || $json['jsonrpc'] !== '2.0') {
             return false;
         }
-        
+
         // Must have method property
         if (!isset($json['method']) || !is_string($json['method'])) {
             return false;
         }
-        
+
         // If params is present, it must be an object or array
         if (isset($json['params']) && !is_array($json['params'])) {
             return false;
         }
-        
+
         // id can be string, number, null, or not present (notification)
         if (isset($json['id']) && !is_string($json['id']) && !is_int($json['id']) && !is_null($json['id'])) {
             return false;
         }
-        
+
         return true;
     }
 }

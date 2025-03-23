@@ -2,8 +2,8 @@
 
 namespace ElliottLawson\LaravelMcp\Tools;
 
-use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Process;
 
 /**
  * Tool implementation for executing shell commands.
@@ -18,9 +18,9 @@ class CommandTool extends BaseTool
     /**
      * Create a new command tool instance.
      *
-     * @param string $name The tool name
-     * @param array $options Default command options
-     * @param array $metadata Additional metadata for the tool
+     * @param  string  $name  The tool name
+     * @param  array  $options  Default command options
+     * @param  array  $metadata  Additional metadata for the tool
      */
     public function __construct(string $name, array $options = [], array $metadata = [])
     {
@@ -58,7 +58,7 @@ class CommandTool extends BaseTool
     /**
      * Execute the tool with the given parameters.
      *
-     * @param array $params The parameters for the tool execution
+     * @param  array  $params  The parameters for the tool execution
      * @return mixed The result of the tool execution
      */
     public function execute(array $params = [])

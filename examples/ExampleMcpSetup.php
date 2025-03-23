@@ -2,15 +2,15 @@
 
 namespace App\Providers;
 
+use App\Models\Post;
+use App\Models\User;
+use App\Tools\WeatherTool;
+use App\Resources\UserResource;
 use Illuminate\Support\ServiceProvider;
 use ElliottLawson\LaravelMcp\McpManager;
-use App\Models\User;
-use App\Models\Post;
-use App\Resources\UserResource;
-use App\Tools\WeatherTool;
-use ElliottLawson\LaravelMcp\Resources\ModelResource;
-use ElliottLawson\LaravelMcp\Prompts\FilePrompt;
 use ElliottLawson\LaravelMcp\Tools\HttpTool;
+use ElliottLawson\LaravelMcp\Prompts\FilePrompt;
+use ElliottLawson\LaravelMcp\Resources\ModelResource;
 
 /**
  * Example service provider for setting up MCP in a Laravel application.
@@ -32,14 +32,14 @@ class ExampleMcpServiceProvider extends ServiceProvider
     {
         // Register resources
         $this->registerResources($mcp);
-        
+
         // Register tools
         $this->registerTools($mcp);
-        
+
         // Register prompts
         $this->registerPrompts($mcp);
     }
-    
+
     /**
      * Register MCP resources.
      */
@@ -53,29 +53,29 @@ class ExampleMcpServiceProvider extends ServiceProvider
                 'per_page' => 10,
             ]);
         });
-        
+
         // Register a model resource using a closure
         $mcp->resource('posts', function ($params) {
             $query = Post::query();
-            
+
             // Apply filters
             if (isset($params['user_id'])) {
                 $query->where('user_id', $params['user_id']);
             }
-            
+
             // Apply pagination
             $perPage = $params['per_page'] ?? 15;
             $page = $params['page'] ?? 1;
-            
+
             return $query->paginate($perPage, ['*'], 'page', $page);
         });
-        
+
         // Register a custom resource class
         $mcp->resource('custom_users', function () {
-            return new UserResource();
+            return new UserResource;
         });
     }
-    
+
     /**
      * Register MCP tools.
      */
@@ -90,7 +90,7 @@ class ExampleMcpServiceProvider extends ServiceProvider
                 ],
             ]);
         });
-        
+
         // Register a tool using a closure
         $mcp->tool('echo', function ($params) {
             return [
@@ -106,7 +106,7 @@ class ExampleMcpServiceProvider extends ServiceProvider
                 ],
             ],
         ]);
-        
+
         // Register a custom tool class
         $mcp->tool('weather', function () {
             return new WeatherTool('weather', [
@@ -114,7 +114,7 @@ class ExampleMcpServiceProvider extends ServiceProvider
             ]);
         });
     }
-    
+
     /**
      * Register MCP prompts.
      */
@@ -126,14 +126,15 @@ class ExampleMcpServiceProvider extends ServiceProvider
                 'description' => 'Welcome message for new users',
             ]);
         });
-        
+
         // Register a prompt using a closure
         $mcp->prompt('greeting', function ($variables) {
             $template = 'Hello, {{name}}! Welcome to {{app_name}}.';
-            
+
             // Replace variables in the format {{variable_name}}
             return preg_replace_callback('/\{\{([^}]+)\}\}/', function ($matches) use ($variables) {
                 $key = trim($matches[1]);
+
                 return $variables[$key] ?? $matches[0];
             }, $template);
         });

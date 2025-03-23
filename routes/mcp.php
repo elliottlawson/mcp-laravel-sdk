@@ -2,9 +2,9 @@
 
 use Illuminate\Support\Facades\Route;
 use ElliottLawson\LaravelMcp\Http\Controllers\McpController;
+use ElliottLawson\LaravelMcp\Http\Middleware\McpSseMiddleware;
 use ElliottLawson\LaravelMcp\Http\Middleware\McpCorsMiddleware;
 use ElliottLawson\LaravelMcp\Http\Middleware\McpJsonRpcMiddleware;
-use ElliottLawson\LaravelMcp\Http\Middleware\McpSseMiddleware;
 
 /*
 |--------------------------------------------------------------------------

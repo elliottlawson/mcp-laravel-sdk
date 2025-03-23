@@ -2,16 +2,18 @@
 
 namespace ElliottLawson\LaravelMcp\Events;
 
-use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Broadcasting\InteractsWithSockets;
 
 /**
  * Event for Server-Sent Events.
  */
 class SseEvent
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     /**
      * The event data.
@@ -36,10 +38,10 @@ class SseEvent
     /**
      * Create a new event instance.
      *
-     * @param mixed $data The event data
-     * @param string|null $event The event name
-     * @param string|null $id The event ID
-     * @param string $connectionId The connection ID
+     * @param  mixed  $data  The event data
+     * @param  string|null  $event  The event name
+     * @param  string|null  $id  The event ID
+     * @param  string  $connectionId  The connection ID
      */
     public function __construct($data, ?string $event = null, ?string $id = null, string $connectionId = '')
     {

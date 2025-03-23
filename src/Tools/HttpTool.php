@@ -2,8 +2,8 @@
 
 namespace ElliottLawson\LaravelMcp\Tools;
 
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 
 /**
  * Tool implementation for making HTTP requests.
@@ -18,9 +18,9 @@ class HttpTool extends BaseTool
     /**
      * Create a new HTTP tool instance.
      *
-     * @param string $name The tool name
-     * @param array $options Default request options
-     * @param array $metadata Additional metadata for the tool
+     * @param  string  $name  The tool name
+     * @param  array  $options  Default request options
+     * @param  array  $metadata  Additional metadata for the tool
      */
     public function __construct(string $name, array $options = [], array $metadata = [])
     {
@@ -68,7 +68,7 @@ class HttpTool extends BaseTool
     /**
      * Execute the tool with the given parameters.
      *
-     * @param array $params The parameters for the tool execution
+     * @param  array  $params  The parameters for the tool execution
      * @return mixed The result of the tool execution
      */
     public function execute(array $params = [])
@@ -135,7 +135,7 @@ class HttpTool extends BaseTool
     /**
      * Parse the response body based on content type.
      *
-     * @param \Illuminate\Http\Client\Response $response The HTTP response
+     * @param  \Illuminate\Http\Client\Response  $response  The HTTP response
      * @return mixed The parsed response body
      */
     protected function parseResponseBody($response)

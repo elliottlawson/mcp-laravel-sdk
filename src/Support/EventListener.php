@@ -2,7 +2,7 @@
 
 namespace ElliottLawson\LaravelMcp\Support;
 
-use ElliottLawson\McpPhpSdk\Server\McpServer;
+use ElliottLawson\LaravelMcp\McpManager;
 
 /**
  * Registers event listeners for MCP Server events.
@@ -14,7 +14,7 @@ class EventListener
      *
      * @param  object  $events  Laravel event dispatcher instance
      */
-    public static function register($events, McpServer $server): void
+    public static function register($events, McpManager $server): void
     {
         // MCP resource events
         $events->listen('mcp.resource.accessed', function ($resourceUri) use ($server) {

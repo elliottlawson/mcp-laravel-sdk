@@ -12,15 +12,11 @@ class PromptProcedure extends BaseProcedure
 {
     /**
      * The name of the procedure that will be used for RPC.
-     *
-     * @var string
      */
     public static string $name = 'prompt';
 
     /**
      * List all available prompts.
-     *
-     * @return array
      */
     public function list(): array
     {
@@ -42,9 +38,9 @@ class PromptProcedure extends BaseProcedure
     /**
      * Get a prompt by name.
      *
-     * @param string $name The prompt name
-     * @param array $variables The variables to interpolate into the prompt
-     * @return string
+     * @param  string  $name  The prompt name
+     * @param  array  $variables  The variables to interpolate into the prompt
+     *
      * @throws PromptNotFoundException
      */
     public function get(string $name, array $variables = []): string
@@ -90,15 +86,15 @@ class PromptProcedure extends BaseProcedure
     /**
      * Process a prompt string with variables.
      *
-     * @param string $content The prompt content
-     * @param array $variables The variables to interpolate
-     * @return string
+     * @param  string  $content  The prompt content
+     * @param  array  $variables  The variables to interpolate
      */
     protected function processPromptString(string $content, array $variables = []): string
     {
         // Replace variables in the format {{variable_name}}
         return preg_replace_callback('/\{\{([^}]+)\}\}/', function ($matches) use ($variables) {
             $key = trim($matches[1]);
+
             return $variables[$key] ?? $matches[0];
         }, $content);
     }

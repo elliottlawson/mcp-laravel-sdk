@@ -2,8 +2,8 @@
 
 require __DIR__ . '/vendor/autoload.php';
 
-use ElliottLawson\LaravelMcp\Transport\LaravelSseTransport;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use ElliottLawson\LaravelMcp\Transport\LaravelSseTransport;
 
 // This script tests the LaravelSseTransport class functionality directly
 // Run with: php test-sse-server.php
@@ -17,7 +17,7 @@ echo "✓ Created LaravelSseTransport instance\n";
 
 // Test message handler
 $messageHandled = false;
-$transport->setMessageHandler(function($message) use (&$messageHandled) {
+$transport->setMessageHandler(function ($message) use (&$messageHandled) {
     echo "\n✓ Message handler received: " . $message . "\n";
     $messageHandled = true;
 });
@@ -28,7 +28,7 @@ echo "✓ Set message handler\n";
 $testConnectionId = 'test-connection-' . uniqid();
 $transport->setMessageStoreId($testConnectionId);
 
-echo "✓ Set message store ID: " . $testConnectionId . "\n";
+echo '✓ Set message store ID: ' . $testConnectionId . "\n";
 
 // Test start/stop functionality
 $transport->start();
@@ -52,7 +52,7 @@ $testMessage = json_encode([
     'jsonrpc' => '2.0',
     'method' => 'test_method',
     'params' => ['hello' => 'world'],
-    'id' => 12345
+    'id' => 12345,
 ]);
 
 echo "Testing processMessage...\n";

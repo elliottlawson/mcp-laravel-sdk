@@ -1,0 +1,2 @@
+This is a test prompt for the MCP SDK.
+You can use this prompt to test the prompt.get functionality.

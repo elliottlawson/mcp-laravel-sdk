@@ -4,9 +4,9 @@ namespace ElliottLawson\LaravelMcp\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Illuminate\Support\Facades\Event;
 use ElliottLawson\LaravelMcp\Facades\Mcp;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class McpMiddleware
 {

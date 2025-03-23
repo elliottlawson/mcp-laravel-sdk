@@ -27,9 +27,9 @@ abstract class BaseTool implements ToolContract
     /**
      * Create a new tool instance.
      *
-     * @param string $name The tool name
-     * @param array $schema The JSON schema for the tool parameters
-     * @param array $metadata Additional metadata for the tool
+     * @param  string  $name  The tool name
+     * @param  array  $schema  The JSON schema for the tool parameters
+     * @param  array  $metadata  Additional metadata for the tool
      */
     public function __construct(string $name, array $schema = [], array $metadata = [])
     {
@@ -44,7 +44,7 @@ abstract class BaseTool implements ToolContract
     /**
      * Execute the tool with the given parameters.
      *
-     * @param array $params The parameters for the tool execution
+     * @param  array  $params  The parameters for the tool execution
      * @return mixed The result of the tool execution
      */
     abstract public function execute(array $params = []);
@@ -72,7 +72,7 @@ abstract class BaseTool implements ToolContract
     /**
      * Set the tool schema.
      *
-     * @param array $schema The JSON schema for the tool parameters
+     * @param  array  $schema  The JSON schema for the tool parameters
      * @return $this
      */
     public function setSchema(array $schema): self
@@ -85,7 +85,7 @@ abstract class BaseTool implements ToolContract
     /**
      * Set the tool metadata.
      *
-     * @param array $metadata The metadata for the tool
+     * @param  array  $metadata  The metadata for the tool
      * @return $this
      */
     public function setMetadata(array $metadata): self
@@ -98,8 +98,8 @@ abstract class BaseTool implements ToolContract
     /**
      * Set a specific metadata value.
      *
-     * @param string $key The metadata key
-     * @param mixed $value The metadata value
+     * @param  string  $key  The metadata key
+     * @param  mixed  $value  The metadata value
      * @return $this
      */
     public function setMetadataValue(string $key, $value): self
@@ -112,7 +112,7 @@ abstract class BaseTool implements ToolContract
     /**
      * Validate parameters against the schema.
      *
-     * @param array $params The parameters to validate
+     * @param  array  $params  The parameters to validate
      * @return bool Whether the parameters are valid
      */
     protected function validateParameters(array $params): bool
@@ -149,8 +149,8 @@ abstract class BaseTool implements ToolContract
     /**
      * Validate a value against a JSON schema type.
      *
-     * @param mixed $value The value to validate
-     * @param string $type The JSON schema type
+     * @param  mixed  $value  The value to validate
+     * @param  string  $type  The JSON schema type
      * @return bool Whether the value is valid
      */
     protected function validateType($value, string $type): bool

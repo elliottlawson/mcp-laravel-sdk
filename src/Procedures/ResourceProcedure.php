@@ -2,7 +2,6 @@
 
 namespace ElliottLawson\LaravelMcp\Procedures;
 
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use ElliottLawson\LaravelMcp\Exceptions\ResourceNotFoundException;
 
@@ -13,15 +12,11 @@ class ResourceProcedure extends BaseProcedure
 {
     /**
      * The name of the procedure that will be used for RPC.
-     *
-     * @var string
      */
     public static string $name = 'resource';
 
     /**
      * List all available resources.
-     *
-     * @return array
      */
     public function list(): array
     {
@@ -43,9 +38,10 @@ class ResourceProcedure extends BaseProcedure
     /**
      * Get a resource by name.
      *
-     * @param string $name The resource name
-     * @param array $params The parameters for the resource request
+     * @param  string  $name  The resource name
+     * @param  array  $params  The parameters for the resource request
      * @return mixed
+     *
      * @throws ResourceNotFoundException
      */
     public function get(string $name, array $params = [])
@@ -94,8 +90,8 @@ class ResourceProcedure extends BaseProcedure
     /**
      * Get the schema for a resource.
      *
-     * @param string $name The resource name
-     * @return array|null
+     * @param  string  $name  The resource name
+     *
      * @throws ResourceNotFoundException
      */
     public function schema(string $name): ?array
@@ -121,8 +117,8 @@ class ResourceProcedure extends BaseProcedure
     /**
      * Handle a model resource.
      *
-     * @param \Illuminate\Database\Eloquent\Model $model The model
-     * @param array $params The parameters for the resource request
+     * @param  \Illuminate\Database\Eloquent\Model  $model  The model
+     * @param  array  $params  The parameters for the resource request
      * @return mixed
      */
     protected function handleModelResource(\Illuminate\Database\Eloquent\Model $model, array $params = [])

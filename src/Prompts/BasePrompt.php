@@ -27,9 +27,9 @@ abstract class BasePrompt implements PromptContract
     /**
      * Create a new prompt instance.
      *
-     * @param string $name The prompt name
-     * @param string $content The prompt content
-     * @param array $metadata Additional metadata for the prompt
+     * @param  string  $name  The prompt name
+     * @param  string  $content  The prompt content
+     * @param  array  $metadata  Additional metadata for the prompt
      */
     public function __construct(string $name, string $content, array $metadata = [])
     {
@@ -54,7 +54,7 @@ abstract class BasePrompt implements PromptContract
     /**
      * Process the prompt with the given variables.
      *
-     * @param array $variables The variables to interpolate into the prompt
+     * @param  array  $variables  The variables to interpolate into the prompt
      * @return string The processed prompt
      */
     public function process(array $variables = []): string
@@ -62,6 +62,7 @@ abstract class BasePrompt implements PromptContract
         // Replace variables in the format {{variable_name}}
         return preg_replace_callback('/\{\{([^}]+)\}\}/', function ($matches) use ($variables) {
             $key = trim($matches[1]);
+
             return $variables[$key] ?? $matches[0];
         }, $this->content);
     }
@@ -79,7 +80,7 @@ abstract class BasePrompt implements PromptContract
     /**
      * Set the prompt content.
      *
-     * @param string $content The prompt content
+     * @param  string  $content  The prompt content
      * @return $this
      */
     public function setContent(string $content): self
@@ -92,7 +93,7 @@ abstract class BasePrompt implements PromptContract
     /**
      * Set the prompt metadata.
      *
-     * @param array $metadata The metadata for the prompt
+     * @param  array  $metadata  The metadata for the prompt
      * @return $this
      */
     public function setMetadata(array $metadata): self
@@ -105,8 +106,8 @@ abstract class BasePrompt implements PromptContract
     /**
      * Set a specific metadata value.
      *
-     * @param string $key The metadata key
-     * @param mixed $value The metadata value
+     * @param  string  $key  The metadata key
+     * @param  mixed  $value  The metadata value
      * @return $this
      */
     public function setMetadataValue(string $key, $value): self

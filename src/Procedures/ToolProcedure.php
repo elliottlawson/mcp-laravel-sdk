@@ -13,15 +13,11 @@ class ToolProcedure extends BaseProcedure
 {
     /**
      * The name of the procedure that will be used for RPC.
-     *
-     * @var string
      */
     public static string $name = 'tool';
 
     /**
      * List all available tools.
-     *
-     * @return array
      */
     public function list(): array
     {
@@ -44,9 +40,10 @@ class ToolProcedure extends BaseProcedure
     /**
      * Execute a tool by name.
      *
-     * @param string $name The tool name
-     * @param array $params The parameters for the tool execution
+     * @param  string  $name  The tool name
+     * @param  array  $params  The parameters for the tool execution
      * @return mixed
+     *
      * @throws ToolNotFoundException
      * @throws InvalidToolParametersException
      */
@@ -93,8 +90,8 @@ class ToolProcedure extends BaseProcedure
     /**
      * Get the schema for a tool.
      *
-     * @param string $name The tool name
-     * @return array|null
+     * @param  string  $name  The tool name
+     *
      * @throws ToolNotFoundException
      */
     public function schema(string $name): ?array
@@ -111,9 +108,8 @@ class ToolProcedure extends BaseProcedure
     /**
      * Validate parameters against a JSON schema.
      *
-     * @param array $params The parameters to validate
-     * @param array $schema The JSON schema
-     * @return bool
+     * @param  array  $params  The parameters to validate
+     * @param  array  $schema  The JSON schema
      */
     protected function validateParameters(array $params, array $schema): bool
     {
@@ -149,9 +145,8 @@ class ToolProcedure extends BaseProcedure
     /**
      * Validate a value against a JSON schema type.
      *
-     * @param mixed $value The value to validate
-     * @param string $type The JSON schema type
-     * @return bool
+     * @param  mixed  $value  The value to validate
+     * @param  string  $type  The JSON schema type
      */
     protected function validateType($value, string $type): bool
     {

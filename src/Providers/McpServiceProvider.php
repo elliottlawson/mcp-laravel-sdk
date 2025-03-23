@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use ElliottLawson\LaravelMcp\McpManager;
 use ElliottLawson\LaravelMcp\Support\EventListener;
-use Sajya\Server\ServerRequestHelper;
 
 class McpServiceProvider extends ServiceProvider
 {

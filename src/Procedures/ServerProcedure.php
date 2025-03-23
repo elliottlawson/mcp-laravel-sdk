@@ -11,15 +11,11 @@ class ServerProcedure extends BaseProcedure
 {
     /**
      * The name of the procedure that will be used for RPC.
-     *
-     * @var string
      */
     public static string $name = 'server';
 
     /**
      * Get server information.
-     *
-     * @return array
      */
     public function info(): array
     {
@@ -28,8 +24,6 @@ class ServerProcedure extends BaseProcedure
 
     /**
      * Get server capabilities.
-     *
-     * @return array
      */
     public function capabilities(): array
     {
@@ -39,10 +33,9 @@ class ServerProcedure extends BaseProcedure
     /**
      * Log a message to the server.
      *
-     * @param string $level The log level
-     * @param string $message The log message
-     * @param array $context The log context
-     * @return bool
+     * @param  string  $level  The log level
+     * @param  string  $message  The log message
+     * @param  array  $context  The log context
      */
     public function log(string $level, string $message, array $context = []): bool
     {
@@ -60,8 +53,6 @@ class ServerProcedure extends BaseProcedure
 
     /**
      * Ping the server to check if it's alive.
-     *
-     * @return array
      */
     public function ping(): array
     {
