@@ -193,8 +193,17 @@ class McpController extends Controller
             'ip' => $request->ip(),
         ], now()->addHours(1));
 
+        // Get the SSE response
+        $response = $transport->getResponse();
+        
+        // Explicitly ensure Content-Type is set properly
+        $response->headers->set('Content-Type', 'text/event-stream', true);
+        $response->headers->set('Cache-Control', 'no-cache', true);
+        $response->headers->set('Connection', 'keep-alive', true);
+        $response->headers->set('X-Accel-Buffering', 'no', true);
+        
         // Return the SSE response
-        return $transport->getResponse();
+        return $response;
     }
     
     /**

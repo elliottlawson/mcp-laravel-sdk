@@ -64,7 +64,10 @@ class LaravelSseTransport extends SseTransport
         });
         
         $this->setProtectedProperty('headerCallback', function (string $name, string $value) {
-            // Headers will be set through the response object
+            // Handle header setting in the callback
+            if ($this->response) {
+                $this->response->headers->set($name, $value, true);
+            }
         });
         
         $this->setProtectedProperty('flushCallback', function () {
