@@ -2,12 +2,25 @@
 
 namespace ElliottLawson\LaravelMcp;
 
+use Illuminate\Support\Str;
+use Sajya\Server\Procedure;
 use Illuminate\Database\Eloquent\Model;
-use ElliottLawson\McpPhpSdk\Server\McpServer;
 use Illuminate\Contracts\Foundation\Application;
-use ElliottLawson\McpPhpSdk\Server\ServerCapabilities;
+use ElliottLawson\LaravelMcp\Support\ToolExecutor;
+use ElliottLawson\LaravelMcp\Events\ToolRegistered;
+use ElliottLawson\LaravelMcp\Support\PromptManager;
+use ElliottLawson\LaravelMcp\Contracts\ToolContract;
+use ElliottLawson\LaravelMcp\Events\PromptRegistered;
+use ElliottLawson\LaravelMcp\Contracts\PromptContract;
+use ElliottLawson\LaravelMcp\Procedures\ToolProcedure;
+use ElliottLawson\LaravelMcp\Events\ResourceRegistered;
 use ElliottLawson\LaravelMcp\Support\ResourceRegistrar;
-use ElliottLawson\McpPhpSdk\Contracts\TransportInterface;
+use ElliottLawson\LaravelMcp\Contracts\ResourceContract;
+use ElliottLawson\LaravelMcp\Procedures\PromptProcedure;
+use ElliottLawson\LaravelMcp\Procedures\ServerProcedure;
+use ElliottLawson\LaravelMcp\Procedures\ResourceProcedure;
+use ElliottLawson\LaravelMcp\Exceptions\InvalidToolException;
+use ElliottLawson\LaravelMcp\Exceptions\InvalidResourceException;
 
 /**
  * Manages the MCP server and its resources, tools, and prompts.
@@ -15,14 +28,24 @@ use ElliottLawson\McpPhpSdk\Contracts\TransportInterface;
 class McpManager
 {
     /**
-     * The MCP server instance.
-     */
-    protected ?McpServer $server = null;
-
-    /**
      * The Laravel application instance.
      */
     protected Application $app;
+
+    /**
+     * The registered resources.
+     */
+    protected array $resources = [];
+
+    /**
+     * The registered tools.
+     */
+    protected array $tools = [];
+
+    /**
+     * The registered prompts.
+     */
+    protected array $prompts = [];
 
     /**
      * The resource registrar instance.
@@ -30,91 +53,270 @@ class McpManager
     protected ?ResourceRegistrar $resourceRegistrar = null;
 
     /**
+     * The tool executor instance.
+     */
+    protected ?ToolExecutor $toolExecutor = null;
+
+    /**
+     * The prompt manager instance.
+     */
+    protected ?PromptManager $promptManager = null;
+
+    /**
+     * The registered JSON-RPC procedures.
+     */
+    protected array $procedures = [];
+
+    /**
      * Create a new MCP Manager instance.
      */
     public function __construct(Application $app)
     {
         $this->app = $app;
+        $this->registerCoreProcedures();
+        $this->loadConfiguredItems();
     }
 
     /**
-     * Get or create the MCP server instance.
+     * Register the core JSON-RPC procedures.
      */
-    public function server(): McpServer
+    protected function registerCoreProcedures(): void
     {
-        if ($this->server === null) {
-            $serverConfig = [
-                'name' => $this->app->make('config')->get('mcp.name', 'Laravel MCP Server'),
-                'version' => $this->app->make('config')->get('mcp.version', '1.0.0'),
-            ];
+        // Register server procedure for handling server-related methods
+        $this->procedures[] = new ServerProcedure($this);
 
-            // Add capabilities configuration
-            $capabilities = $this->configureCapabilities();
-            if ($capabilities) {
-                $serverConfig['capabilities'] = $capabilities;
-            }
+        // Register resource procedure for handling resource-related methods
+        $this->procedures[] = new ResourceProcedure($this);
 
-            $this->server = new McpServer($serverConfig);
+        // Register tool procedure for handling tool-related methods
+        $this->procedures[] = new ToolProcedure($this);
 
-            // Register resources from config if any
-            $this->registerConfiguredResources();
-
-            // Register tools from config if any
-            $this->registerConfiguredTools();
-
-            // Register prompts from config if any
-            $this->registerConfiguredPrompts();
-        }
-
-        return $this->server;
+        // Register prompt procedure for handling prompt-related methods
+        $this->procedures[] = new PromptProcedure($this);
     }
 
     /**
-     * Configure server capabilities from config.
+     * Get all registered JSON-RPC procedures.
      */
-    protected function configureCapabilities(): ?ServerCapabilities
+    public function getProcedures(): array
     {
-        $capConfig = $this->app->make('config')->get('mcp.capabilities', []);
-        if (empty($capConfig)) {
-            return null;
-        }
+        return $this->procedures;
+    }
 
-        $capabilities = ServerCapabilities::create();
+    /**
+     * Register a custom JSON-RPC procedure.
+     */
+    public function registerProcedure(Procedure $procedure): self
+    {
+        $this->procedures[] = $procedure;
 
-        // Configure resource capabilities
-        if (isset($capConfig['resources'])) {
-            $capabilities = $capabilities->withResources(
-                $capConfig['resources']['enabled'] ?? true,
-                $capConfig['resources']['list_changes'] ?? false
-            );
-        }
+        return $this;
+    }
 
-        // Configure tool capabilities
-        if (isset($capConfig['tools'])) {
-            $capabilities = $capabilities->withTools($capConfig['tools'] ?? true);
-        }
-
-        // Configure prompt capabilities
-        if (isset($capConfig['prompts'])) {
-            $capabilities = $capabilities->withPrompts($capConfig['prompts'] ?? true);
-        }
-
-        // Configure logging capabilities
-        if (isset($capConfig['logging'])) {
-            $capabilities = $capabilities->withLogging($capConfig['logging']['level'] ?? 'info');
-        }
-
-        return $capabilities;
+    /**
+     * Load resources, tools, and prompts from configuration.
+     */
+    protected function loadConfiguredItems(): void
+    {
+        $this->registerConfiguredResources();
+        $this->registerConfiguredTools();
+        $this->registerConfiguredPrompts();
     }
 
     /**
      * Register a resource with the MCP server.
+     *
+     * @param  string  $name  The name of the resource
+     * @param  mixed  $handler  The resource handler (class name, instance, or closure)
+     * @param  array  $options  Additional options for the resource
      */
-    public function resource(string $name, $uriPattern, ?callable $handler = null): self
+    public function resource(string $name, $handler, array $options = []): self
     {
-        $this->server()->resource($name, $uriPattern, $handler);
+        // Normalize the resource name
+        $name = Str::snake($name);
+
+        // Resolve the handler if it's a class name
+        if (is_string($handler) && class_exists($handler)) {
+            $handler = $this->app->make($handler);
+        }
+
+        // Check if the handler is valid
+        if (!$this->isValidResourceHandler($handler)) {
+            throw new InvalidResourceException("Invalid resource handler for '{$name}'");
+        }
+
+        // Register the resource
+        $this->resources[$name] = [
+            'handler' => $handler,
+            'options' => $options,
+        ];
+
+        // Dispatch event
+        if (class_exists(ResourceRegistered::class)) {
+            event(new ResourceRegistered($name, $handler, $options));
+        }
 
         return $this;
+    }
+
+    /**
+     * Check if a resource handler is valid.
+     */
+    protected function isValidResourceHandler($handler): bool
+    {
+        return $handler instanceof ResourceContract
+            || $handler instanceof Model
+            || is_callable($handler);
+    }
+
+    /**
+     * Register a tool with the MCP server.
+     *
+     * @param  string  $name  The name of the tool
+     * @param  mixed  $schema  The JSON schema for the tool parameters
+     * @param  mixed  $handler  The tool handler (class name, instance, or closure)
+     */
+    public function tool(string $name, $schema, $handler = null): self
+    {
+        // Normalize the tool name
+        $name = Str::snake($name);
+
+        // If only schema is provided and it's a class or object
+        if ($handler === null && (is_string($schema) || is_object($schema))) {
+            if (is_string($schema) && class_exists($schema)) {
+                $schema = $this->app->make($schema);
+            }
+
+            if ($schema instanceof ToolContract) {
+                $handler = $schema;
+                $schema = $schema->getSchema();
+            }
+        }
+
+        // Resolve the handler if it's a class name
+        if (is_string($handler) && class_exists($handler)) {
+            $handler = $this->app->make($handler);
+        }
+
+        // Check if the handler is valid
+        if (!$this->isValidToolHandler($handler)) {
+            throw new InvalidToolException("Invalid tool handler for '{$name}'");
+        }
+
+        // Register the tool
+        $this->tools[$name] = [
+            'schema' => $schema,
+            'handler' => $handler,
+        ];
+
+        // Dispatch event
+        if (class_exists(ToolRegistered::class)) {
+            event(new ToolRegistered($name, $schema, $handler));
+        }
+
+        return $this;
+    }
+
+    /**
+     * Check if a tool handler is valid.
+     */
+    protected function isValidToolHandler($handler): bool
+    {
+        return $handler instanceof ToolContract
+            || is_callable($handler);
+    }
+
+    /**
+     * Register a prompt with the MCP server.
+     *
+     * @param  string  $name  The name of the prompt
+     * @param  mixed  $content  The prompt content or schema
+     * @param  mixed  $handler  The prompt handler (optional)
+     */
+    public function prompt(string $name, $content, $handler = null): self
+    {
+        // Normalize the prompt name
+        $name = Str::snake($name);
+
+        // If content is a class name, resolve it
+        if (is_string($content) && class_exists($content)) {
+            $content = $this->app->make($content);
+        }
+
+        // If content is a PromptContract instance
+        if ($content instanceof PromptContract) {
+            $handler = $content;
+            $content = $content->getContent();
+        }
+
+        // Resolve the handler if it's a class name
+        if (is_string($handler) && class_exists($handler)) {
+            $handler = $this->app->make($handler);
+        }
+
+        // Register the prompt
+        $this->prompts[$name] = [
+            'content' => $content,
+            'handler' => $handler,
+        ];
+
+        // Dispatch event
+        if (class_exists(PromptRegistered::class)) {
+            event(new PromptRegistered($name, $content, $handler));
+        }
+
+        return $this;
+    }
+
+    /**
+     * Get all registered resources.
+     */
+    public function getResources(): array
+    {
+        return $this->resources;
+    }
+
+    /**
+     * Get all registered tools.
+     */
+    public function getTools(): array
+    {
+        return $this->tools;
+    }
+
+    /**
+     * Get all registered prompts.
+     */
+    public function getPrompts(): array
+    {
+        return $this->prompts;
+    }
+
+    /**
+     * Get server information.
+     */
+    public function getServerInfo(): array
+    {
+        return [
+            'name' => config('mcp.server.name', 'Laravel MCP Server'),
+            'version' => config('mcp.server.version', '1.0.0'),
+            'capabilities' => $this->getCapabilities(),
+        ];
+    }
+
+    /**
+     * Get server capabilities.
+     */
+    public function getCapabilities(): array
+    {
+        $config = config('mcp.capabilities', []);
+
+        return [
+            'resources' => $config['resources'] ?? true,
+            'tools' => $config['tools'] ?? true,
+            'prompts' => $config['prompts'] ?? true,
+            'logging' => $config['logging']['level'] ?? 'info',
+        ];
     }
 
     /**
@@ -122,24 +324,18 @@ class McpManager
      */
     protected function registerConfiguredResources(): void
     {
-        $resources = $this->app->make('config')->get('mcp.resources', []);
+        $resources = config('mcp.resources', []);
 
-        foreach ($resources as $uri => $resourceConfig) {
+        foreach ($resources as $name => $resourceConfig) {
             if (is_string($resourceConfig)) {
                 // If the resource is just a class name
-                $resource = $this->app->make($resourceConfig);
-                $this->server()->resource($uri, $resource, []);
-            } elseif (is_array($resourceConfig) && isset($resourceConfig['class'])) {
+                $this->resource($name, $resourceConfig);
+            } elseif (is_array($resourceConfig) && isset($resourceConfig['handler'])) {
                 // If the resource is a configuration array
-                $class = $resourceConfig['class'];
-                $resource = $this->app->make($class);
+                $handler = $resourceConfig['handler'];
+                $options = $resourceConfig['options'] ?? [];
 
-                // Apply any additional configuration
-                if (isset($resourceConfig['options']) && is_array($resourceConfig['options'])) {
-                    $this->server()->resource($uri, $resource, $resourceConfig['options']);
-                } else {
-                    $this->server()->resource($uri, $resource, []);
-                }
+                $this->resource($name, $handler, $options);
             }
         }
     }
@@ -149,26 +345,19 @@ class McpManager
      */
     protected function registerConfiguredTools(): void
     {
-        $tools = $this->app->make('config')->get('mcp.tools', []);
+        $tools = config('mcp.tools', []);
 
         foreach ($tools as $name => $toolConfig) {
             if (is_string($toolConfig)) {
                 // If the tool is just a class name
-                $tool = $this->app->make($toolConfig);
-                $this->server()->tool($name, $tool, []);
-            } elseif (is_array($toolConfig) && isset($toolConfig['class'])) {
-                // If the tool is a configuration array
-                $class = $toolConfig['class'];
-                $tool = $this->app->make($class);
+                $this->tool($name, $toolConfig);
+            } elseif (is_array($toolConfig)) {
+                if (isset($toolConfig['handler'])) {
+                    // If the tool has a handler and schema
+                    $schema = $toolConfig['parameters'] ?? $toolConfig['schema'] ?? [];
+                    $handler = $toolConfig['handler'];
 
-                // Apply any additional configuration for schema and handler
-                $schema = $toolConfig['schema'] ?? null;
-                $handler = $toolConfig['handler'] ?? null;
-
-                if ($schema && $handler) {
-                    $this->server()->tool($name, $schema, $handler);
-                } else {
-                    $this->server()->tool($name, $tool, []);
+                    $this->tool($name, $schema, $handler);
                 }
             }
         }
@@ -179,44 +368,22 @@ class McpManager
      */
     protected function registerConfiguredPrompts(): void
     {
-        $prompts = $this->app->make('config')->get('mcp.prompts', []);
+        $prompts = config('mcp.prompts', []);
 
         foreach ($prompts as $name => $promptConfig) {
             if (is_string($promptConfig)) {
                 // If the prompt is just a string
-                $this->server()->prompt($name, $promptConfig, []);
-            } elseif (is_array($promptConfig) && isset($promptConfig['text'])) {
-                // If the prompt is a configuration array
-                $text = $promptConfig['text'];
+                $this->prompt($name, $promptConfig);
+            } elseif (is_array($promptConfig)) {
+                if (isset($promptConfig['content'])) {
+                    // If the prompt has content and possibly a handler
+                    $content = $promptConfig['content'];
+                    $handler = $promptConfig['handler'] ?? null;
 
-                // Apply any additional configuration
-                if (isset($promptConfig['schema']) && isset($promptConfig['handler'])) {
-                    $this->server()->prompt($name, $promptConfig['schema'], $promptConfig['handler']);
-                } else {
-                    $this->server()->prompt($name, $text, []);
+                    $this->prompt($name, $content, $handler);
                 }
             }
         }
-    }
-
-    /**
-     * Register a tool with the MCP server.
-     */
-    public function tool(string $name, $schema, callable $handler): self
-    {
-        $this->server()->tool($name, $schema, $handler);
-
-        return $this;
-    }
-
-    /**
-     * Register a prompt with the MCP server.
-     */
-    public function prompt(string $name, $schema, ?callable $handler = null): self
-    {
-        $this->server()->prompt($name, $schema, $handler);
-
-        return $this;
     }
 
     /**
@@ -232,32 +399,39 @@ class McpManager
     }
 
     /**
-     * Register a model as a resource.
+     * Get the tool executor instance.
      */
-    public function model($model, ?string $uriTemplate = null, array $options = []): self
+    public function getToolExecutor(): ToolExecutor
     {
-        $this->getResourceRegistrar()->register($model, $uriTemplate, $options);
+        if ($this->toolExecutor === null) {
+            $this->toolExecutor = new ToolExecutor($this);
+        }
 
-        return $this;
+        return $this->toolExecutor;
     }
 
     /**
-     * Connect a transport to the server.
+     * Get the prompt manager instance.
      */
-    public function connect(TransportInterface $transport): self
+    public function getPromptManager(): PromptManager
     {
-        $this->server()->connect($transport);
+        if ($this->promptManager === null) {
+            $this->promptManager = new PromptManager($this);
+        }
 
-        return $this;
+        return $this->promptManager;
     }
 
     /**
-     * Log a message to the MCP server.
+     * Log a message with the specified level.
+     *
+     * @param  string  $level  The log level (info, warning, error, debug)
+     * @param  string  $message  The message to log
+     * @param  array  $context  Additional context data
      */
-    public function log(string $level, string $message, array $context = []): self
+    public function log(string $level, string $message, array $context = []): void
     {
-        $this->server()->log($level, $message, null, $context);
-
-        return $this;
+        // Use Laravel's logging system
+        logger()->$level($message, $context);
     }
 }

@@ -2,13 +2,10 @@
 
 namespace Tests\Unit\Transport;
 
-use ElliottLawson\LaravelMcp\Transport\LaravelSseTransport;
-use ElliottLawson\McpPhpSdk\Transport\SseTransport;
-use ElliottLawson\McpPhpSdk\Contracts\TransportInterface;
-use Illuminate\Support\Facades\Event;
 use Orchestra\Testbench\TestCase;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Support\Facades\Event;
 use ElliottLawson\LaravelMcp\Providers\McpServiceProvider;
+use ElliottLawson\LaravelMcp\Support\LaravelSseTransport;
 
 class LaravelSseTransportTest extends TestCase
 {
@@ -16,7 +13,7 @@ class LaravelSseTransportTest extends TestCase
      * @var LaravelSseTransport
      */
     protected $transport;
-    
+
     /**
      * Get package providers.
      *
@@ -31,107 +28,79 @@ class LaravelSseTransportTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Fake events to prevent actual event dispatching
         Event::fake();
-        
+
         // Create a new transport instance with custom heartbeat interval
-        $this->transport = new LaravelSseTransport(10, '/test/message/path');
+        $this->transport = new LaravelSseTransport(10, 120);
     }
 
     /** @test */
-    public function it_extends_sse_transport()
+    public function it_implements_sse_functionality()
     {
-        $this->assertInstanceOf(SseTransport::class, $this->transport);
-        $this->assertInstanceOf(TransportInterface::class, $this->transport);
+        $this->assertInstanceOf(LaravelSseTransport::class, $this->transport);
     }
 
     /** @test */
-    public function it_returns_streamed_response()
+    public function it_has_connection_id()
     {
-        $response = $this->transport->getResponse();
-        
-        $this->assertInstanceOf(StreamedResponse::class, $response);
-        $this->assertEquals('text/event-stream', $response->headers->get('Content-Type'));
-        $this->assertEquals('no-cache, private', $response->headers->get('Cache-Control'));
-        $this->assertEquals('keep-alive', $response->headers->get('Connection'));
+        $this->assertNotEmpty($this->transport->getConnectionId());
+        $this->assertIsString($this->transport->getConnectionId());
     }
 
     /** @test */
-    public function it_can_set_message_handler()
+    public function it_can_send_data_as_string()
     {
-        $called = false;
-        $handler = function($message) use (&$called) {
-            $called = true;
-            return 'processed: ' . $message;
-        };
+        // Set up output buffering to capture the output
+        ob_start();
         
-        $result = $this->transport->setMessageHandler($handler);
+        $this->transport->send('test-message');
         
-        // Should return $this for method chaining
-        $this->assertInstanceOf(LaravelSseTransport::class, $result);
+        $output = ob_get_clean();
         
-        // Test the handler by directly calling processMessage
-        $testMessage = '{"test":"message"}';
-        $this->transport->processMessage($testMessage);
-        
-        // Verify that our handler was called
-        $this->assertTrue($called, 'Message handler should have been called');
+        $this->assertStringContainsString('data: test-message', $output);
     }
 
     /** @test */
-    public function it_can_set_message_store_id()
+    public function it_can_send_data_as_array()
     {
-        $id = 'test-connection-id';
+        // Set up output buffering to capture the output
+        ob_start();
         
-        $result = $this->transport->setMessageStoreId($id);
+        $data = ['message' => 'test', 'type' => 'notification'];
+        $this->transport->send($data);
         
-        // Should return $this for method chaining
-        $this->assertInstanceOf(LaravelSseTransport::class, $result);
+        $output = ob_get_clean();
         
-        // For now, we're limited in what we can verify in this test
-        // since messageStoreId is protected in the parent class
-        $this->assertTrue(true, 'Should set message store ID without errors');
+        $this->assertStringContainsString('data: {"message":"test","type":"notification"}', $output);
     }
 
     /** @test */
-    public function it_starts_and_stops_transport()
+    public function it_can_send_data_with_event_name()
     {
-        $this->assertFalse($this->transport->isRunning());
+        // Set up output buffering to capture the output
+        ob_start();
         
-        $this->transport->start();
-        $this->assertTrue($this->transport->isRunning());
+        $this->transport->send('test-message', 'custom-event');
         
-        $this->transport->stop();
-        $this->assertFalse($this->transport->isRunning());
+        $output = ob_get_clean();
+        
+        $this->assertStringContainsString('event: custom-event', $output);
+        $this->assertStringContainsString('data: test-message', $output);
     }
-    
+
     /** @test */
-    public function it_can_process_messages()
+    public function it_can_send_data_with_id()
     {
-        $processedMessage = null;
-        $handler = function($message) use (&$processedMessage) {
-            $processedMessage = $message;
-            return 'processed';
-        };
+        // Set up output buffering to capture the output
+        ob_start();
         
-        $this->transport->setMessageHandler($handler);
+        $this->transport->send('test-message', null, '123');
         
-        $testMessage = json_encode(['test' => 'value']);
-        $this->transport->processMessage($testMessage);
+        $output = ob_get_clean();
         
-        $this->assertEquals($testMessage, $processedMessage);
-    }
-    
-    /** @test */
-    public function getResponse_includes_proper_content_type_and_headers()
-    {
-        $response = $this->transport->getResponse();
-        
-        $this->assertInstanceOf(StreamedResponse::class, $response);
-        $this->assertEquals(200, $response->getStatusCode());
-        $this->assertEquals('text/event-stream', $response->headers->get('Content-Type'));
-        $this->assertEquals('no-cache, private', $response->headers->get('Cache-Control'));
-        $this->assertEquals('keep-alive', $response->headers->get('Connection'));
+        $this->assertStringContainsString('id: 123', $output);
+        $this->assertStringContainsString('data: test-message', $output);
     }
 }
