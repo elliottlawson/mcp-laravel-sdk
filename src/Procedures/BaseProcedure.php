@@ -11,15 +11,10 @@ use ElliottLawson\LaravelMcp\McpManager;
 abstract class BaseProcedure extends Procedure
 {
     /**
-     * The MCP manager instance.
-     */
-    protected McpManager $manager;
-
-    /**
      * Create a new procedure instance.
      */
-    public function __construct(McpManager $manager)
-    {
-        $this->manager = $manager;
+    public function __construct(
+        protected McpManager $manager
+    ) {
     }
 }

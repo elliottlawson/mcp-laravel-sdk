@@ -28,11 +28,6 @@ use ElliottLawson\LaravelMcp\Exceptions\InvalidResourceException;
 class McpManager
 {
     /**
-     * The Laravel application instance.
-     */
-    protected Application $app;
-
-    /**
      * The registered resources.
      */
     protected array $resources = [];
@@ -70,9 +65,9 @@ class McpManager
     /**
      * Create a new MCP Manager instance.
      */
-    public function __construct(Application $app)
-    {
-        $this->app = $app;
+    public function __construct(
+        protected Application $app
+    ) {
         $this->registerCoreProcedures();
         $this->loadConfiguredItems();
     }

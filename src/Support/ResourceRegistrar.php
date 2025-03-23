@@ -12,14 +12,12 @@ use ElliottLawson\LaravelMcp\McpManager;
  */
 class ResourceRegistrar
 {
-    protected McpManager $manager;
-
     /**
      * Create a new resource registrar.
      */
-    public function __construct(McpManager $manager)
-    {
-        $this->manager = $manager;
+    public function __construct(
+        protected McpManager $manager
+    ) {
     }
 
     /**

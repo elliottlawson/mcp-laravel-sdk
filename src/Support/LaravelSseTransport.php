@@ -8,31 +8,19 @@ namespace ElliottLawson\LaravelMcp\Support;
 class LaravelSseTransport
 {
     /**
-     * The heartbeat interval in seconds.
-     */
-    protected int $heartbeatInterval;
-
-    /**
-     * The maximum execution time in seconds.
-     */
-    protected int $maxExecutionTime;
-
-    /**
-     * The connection ID.
-     */
-    protected string $connectionId;
-
-    /**
      * Create a new SSE transport instance.
      *
      * @param  int  $heartbeatInterval  The heartbeat interval in seconds
      * @param  int  $maxExecutionTime  The maximum execution time in seconds
      */
-    public function __construct(int $heartbeatInterval = 30, int $maxExecutionTime = 0)
-    {
-        $this->heartbeatInterval = $heartbeatInterval;
-        $this->maxExecutionTime = $maxExecutionTime;
-        $this->connectionId = uniqid('mcp_', true);
+    public function __construct(
+        protected int $heartbeatInterval = 30,
+        protected int $maxExecutionTime = 0,
+        protected string $connectionId = ''
+    ) {
+        if (empty($this->connectionId)) {
+            $this->connectionId = uniqid('mcp_', true);
+        }
     }
 
     /**
