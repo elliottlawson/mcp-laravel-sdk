@@ -7,7 +7,7 @@ A Laravel-native implementation of the Model Context Protocol (MCP) Server, allo
 You can install the package via composer:
 
 ```bash
-composer require elliottlawson/laravel-mcp-server
+composer require elliottlawson/mcp-laravel-sdk
 ```
 
 The service provider will be automatically registered through Laravel's package discovery.
